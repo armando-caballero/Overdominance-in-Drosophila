@@ -1,0 +1,481 @@
+// Keywords: 
+
+// set up a simple neutral simulation
+initialize()
+{
+	if (exists("slimgui")) {
+		// if you uncomment previous line and brackets, you may introduce these values in the 
+		// slim command line using the option -d "Chr=\"3L\"" -d seed=123456
+		// Chr name and seed
+		defineConstant("Chr","3L"); 
+		defineConstant("seed", 123456);	
+		//initialize with seed    
+		setSeed(seed);
+		//writeFile(filePath="./IamHere.txt",contents=(""),append=F);
+	}
+	//define outputs: 
+	//for 3L will be: "3L_list_allsnps.txt", "3L_dataBP.ped", "3L_log_bott.txt"
+	defineConstant("file_output_snps","./"+Chr+"sel_list_allsnps.txt"); // output file snps
+	defineConstant("file_output_ped","./"+Chr+"sel_dataBP.ped"); // output file ped
+	defineConstant("log_file", "./"+Chr+"sel_log.txt"); // log file
+	defineConstant("qselpos_file", "./"+Chr+"sel_qselpos.txt"); // qselpos file
+
+	//files notation genes and recombination map:
+	//for 3L will be: "genes_3L.txt", recombination-file-3L-100Kb-2.txt"
+	defineConstant("file_gene_location","./genes_"+Chr+".txt"); //file notation
+	defineConstant("file_rec_map","./recombination-file-"+Chr+"-100kb-2.txt");//recmap
+
+	//define constants
+	defineConstant("L",24500000); //length of the genome region	
+	defineConstant("gc_rate",2e-8); //gene conversion rate
+	defineConstant("mean_len_gc",441); //mean length of gene conversion tracts
+	
+	// set the overall mutation rate
+	initializeMutationRate(1.60e-8);
+
+	// m1 mutation type: neutral, m2 mutation type: deleterious, m3 mutation type: lethal, m5 quasi-neutral, m6 beneficial
+	initializeMutationType("m1", 0.5, "f", 0.0);
+	initializeMutationType("m2", 0.0, "g", -0.2, 0.33);
+	initializeMutationType("m3", 0.02, "f", -1.0);
+	initializeMutationType("m4", 1.5, "g", 0.026,0.66);//overdominant	
+	initializeMutationType("m5", 0.5, "f", -0.0001);
+	initializeMutationType("m6", 0.5, "f", 0.0);
+
+	// g1 genomic element type: non-gene uses m1 (neutrals),m5 (quasi-neutral),m6 (neutrals later beneficial)
+	initializeGenomicElementType("g1", c(m1,m5,m6), c(0.947,0.05,0.003));
+	//g2 genomic element type: gene uses m1 (neutrals), m2 (deleterious), m3 (lethals), m4 (OD), m5 (quasi-neutral),m6 (neutrals later beneficial)
+	initializeGenomicElementType("g2", c(m1,m2,m3,m4,m5,m6), c(0.3300000,0.32308886,0.02081951,0.00000277,0.32308886,0.00300000));
+    
+	//read Drosophila 3L genes
+	lines = readFile(file_gene_location);
+	//lines = readFile("genes3L.txt");
+	g = NULL;
+	start = NULL;
+	end = 0;
+
+	for (line in lines)
+	{
+  		components = strsplit(line, "\t");
+ 		//intergenic  (not included in the "genes_3L.txt" file)
+		if((asInteger(components[0])-1)-(end[size(end)-1]+1) > 0) {
+ 			g = c(g,1);	
+   		start = c(start,end[size(end)-1]+1);
+   		end = c(end,asInteger(components[0])-1); 
+   	}
+   	//genic
+   	//identify regions 1 (g1:intergenic) and 2 (g2: genes)
+   	g = c(g,2); //g = c(g, asInteger(components[0])); 
+   	start = c(start, asInteger(components[0]));
+   	end = c(end, asInteger(components[1]));
+	}
+	//last intergenic position of the chromosome	
+	if(L-(end[size(end)-1]+1) > 0) {
+ 		g = c(g,1);	
+		start = c(start,end[size(end)-1]+1);
+		end=c(end,L);
+	}
+	//eliminate first "end" (used to start the loop) 
+	end=end[c(F,rep(T,(size(end)-1)))];
+
+	start=c(start[0:(size(start)-1)]-1);
+	end=c(end[0:(size(end)-1)]-1);
+	initializeGenomicElement(g, start, end);
+
+	//read Drosophila 3L map from Comeron et al. 2012
+	lines = readFile(file_rec_map);
+	//lines = readFile("recombination-file-3L-100kb-2.txt");
+	rates = NULL;
+	ends = NULL;
+
+	for (line in lines)
+	{
+		components = strsplit(line, "\t");
+		ends = c(ends, asInteger(components[0]));
+		rates = c(rates, asFloat(components[1]));
+	}
+
+	ends = c(ends[1:(size(ends)-1)] - 2, L-1); //starts from 0 (not from 1)
+	rates = rates * 1e-8;
+
+	ends0 = c(-1,ends);
+	diffends=NULL;
+	win_rec=NULL;
+	for(i in 1:(length(ends0)-1)) {
+		diffends=c(diffends,ends0[i]-ends0[i-1]);
+		win_rec=c(win_rec,(ends0[i]-ends0[i-1])*rates[i-1]);
+	}
+	sum_rec=sum(diffends*rates);
+	
+	defineConstant("Rends",ends); //ends recombination map length
+	defineConstant("Rrates",rates); //recombination rates
+	defineConstant("Rdiffends",diffends); //diff ends
+	defineConstant("Rwin",win_rec); //partial recombination 
+	defineConstant("Rtotal",sum_rec); //recombination rates
+	defineConstant("Rnwin",length(ends0)-1); // n_windows
+	
+	//initializeRecombinationRate(rates, ends);
+	initializeRecombinationRate(gc_rate);
+	initializeGeneConversion(1.0, 500,1.0);
+   
+ 	writeFile(filePath=file_output_snps,contents=(""),append=F);
+ 	writeFile(filePath=file_output_ped,contents=(""),append=F);
+ 	writeFile(filePath=log_file, contents=(""), append=F);
+ 	writeFile(filePath=qselpos_file, contents=(""), append=F);
+	//writeFile(filePath="recombination.txt",contents=(""),append=F);
+	//writeFile(filePath="gene_conversion.txt", contents=(""), append=F);
+}
+
+recombination() {
+	n_new_breakpoints=rpois(1,Rtotal);
+	if(n_new_breakpoints==0) {
+		//writeFile(filePath="gene_conversion.txt", contents=(paste(asInteger(breakpoints),sep="\n")),append=T);
+		return F;
+	}
+	win_new_breakpoints=sample(x=c(0:(Rnwin-1)),size=n_new_breakpoints,replace=T,weights=Rwin);
+	new_breakpoints=NULL;
+	for(i in c(0:(n_new_breakpoints-1))) {
+		new_breakpoints=c(new_breakpoints,
+														asInteger(runif(1,Rends[win_new_breakpoints[i]]-(Rdiffends[win_new_breakpoints[i]]-1),
+													  												  Rends[win_new_breakpoints[i]])));
+	}
+	//writeFile(filePath="gene_conversion.txt", contents=(paste(asInteger(breakpoints),sep="\n")),append=T);
+	//writeFile(filePath="recombination.txt", contents=(paste(asInteger(new_breakpoints),sep="\n")),append=T);
+	breakpoints=sort(c(breakpoints,new_breakpoints));
+	return T;
+}
+
+// create a population of 10,000 individuals
+// create a population of N individuals
+1 early() { sim.addSubpop("p1", 10000); }
+
+49800 early() { 
+	sim.addSubpopSplit("p2", 32, p1);
+	sim.addSubpopSplit("p3", 32, p1);
+	sim.addSubpopSplit("p4", 32, p1);
+	sim.addSubpopSplit("p5", 32, p1);
+	sim.addSubpopSplit("p6", 32, p1);
+	sim.addSubpopSplit("p7", 32, p1);
+	sim.addSubpopSplit("p8", 32, p1);
+	sim.addSubpopSplit("p9", 32, p1);
+	sim.addSubpopSplit("p10", 32, p1);
+	sim.addSubpopSplit("p11", 32, p1);
+	sim.addSubpopSplit("p12", 32, p1);
+	sim.addSubpopSplit("p13", 32, p1);
+	sim.addSubpopSplit("p14", 32, p1);
+	sim.addSubpopSplit("p15", 32, p1);
+	sim.addSubpopSplit("p16", 32, p1);
+	sim.addSubpopSplit("p17", 32, p1);
+	sim.addSubpopSplit("p18", 32, p1);
+	sim.addSubpopSplit("p19", 32, p1);
+	sim.addSubpopSplit("p20", 32, p1);
+	sim.addSubpopSplit("p21", 32, p1);
+	sim.addSubpopSplit("p22", 32, p1);
+	sim.addSubpopSplit("p23", 32, p1);
+	sim.addSubpopSplit("p24", 32, p1);
+	sim.addSubpopSplit("p25", 32, p1);
+	sim.addSubpopSplit("p26", 32, p1);
+	sim.addSubpopSplit("p27", 32, p1);
+	sim.addSubpopSplit("p28", 32, p1);
+	sim.addSubpopSplit("p29", 32, p1);
+	sim.addSubpopSplit("p30", 32, p1);
+	sim.addSubpopSplit("p31", 32, p1);
+	sim.addSubpopSplit("p32", 32, p1);
+	sim.addSubpopSplit("p33", 32, p1);
+	p1.setSubpopulationSize(0);}
+
+49800: 50000 late() 
+{ 
+	p2.setMigrationRates(p3, 0.5);
+	p3.setMigrationRates(p4, 0.5);
+	p4.setMigrationRates(p5, 0.5);
+	p5.setMigrationRates(p6, 0.5);
+	p6.setMigrationRates(p7, 0.5);
+	p7.setMigrationRates(p8, 0.5);
+	p8.setMigrationRates(p9, 0.5);
+	p9.setMigrationRates(p10, 0.5);
+	p10.setMigrationRates(p11, 0.5);
+	p11.setMigrationRates(p12, 0.5);
+	p12.setMigrationRates(p13, 0.5);
+	p13.setMigrationRates(p14, 0.5);
+	p14.setMigrationRates(p15, 0.5);
+	p15.setMigrationRates(p16, 0.5);
+	p16.setMigrationRates(p17, 0.5);
+	p17.setMigrationRates(p18, 0.5);
+	p18.setMigrationRates(p19, 0.5);
+	p19.setMigrationRates(p20, 0.5);
+	p20.setMigrationRates(p21, 0.5);
+	p21.setMigrationRates(p22, 0.5);
+	p22.setMigrationRates(p23, 0.5);
+	p23.setMigrationRates(p24, 0.5);
+	p24.setMigrationRates(p25, 0.5);
+	p25.setMigrationRates(p26, 0.5);
+	p26.setMigrationRates(p27, 0.5);
+	p27.setMigrationRates(p28, 0.5);
+	p28.setMigrationRates(p29, 0.5);
+	p29.setMigrationRates(p30, 0.5);
+	p30.setMigrationRates(p31, 0.5);
+	p31.setMigrationRates(p32, 0.5);
+	p32.setMigrationRates(p33, 0.5);
+	p33.setMigrationRates(p2, 0.5);
+
+	muts=sim.mutations;
+	pos=muts[muts.mutationType==m6].position;
+	idm=muts[muts.mutationType==m6].id;
+	freqsum = 32*2 * (
+		sim.mutationFrequencies( c(p2), muts[muts.mutationType==m6])  + 
+		sim.mutationFrequencies( c(p3), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p4), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p5), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p6), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p7), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p8), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p9), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p10), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p11), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p12), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p13), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p14), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p15), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p16), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p17), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p18), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p19), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p20), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p21), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p22), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p23), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p24), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p25), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p26), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p27), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p28), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p29), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p30), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p31), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p32), muts[muts.mutationType==m6]) + 
+		sim.mutationFrequencies( c(p33), muts[muts.mutationType==m6]));
+	
+	if(sim.cycle%10==0)	 {
+		writeFile(filePath=qselpos_file, contents=("cycle: " + sim.cycle),append=T);
+		writeFile(filePath=qselpos_file, contents=("SNPid	Position	Frequency: "),append=T);
+		for(i in c(0:(size(pos)-1))) {		
+			writeFile(filePath=qselpos_file, contents=(idm[i] + "	" + pos[i] + "	" + freqsum[i]),append=T);
+		}
+		writeFile(filePath=qselpos_file, contents=(""),append=T);
+	}
+}
+
+mutation(m2) {
+	K = 7.6;
+   if (mut.selectionCoeff >= -0.42)
+   	mut.setValue("hh", runif(1,0,exp(K*mut.selectionCoeff)));
+   if (mut.selectionCoeff < -0.42)
+		mut.setValue("hh", runif(1,0,0.04));
+	//writeFile(filePath=file_output1,contents=(mut.getValue("hh") +	"\t" + mut.selectionCoeff + "\t" + mut.position),append=T);
+   return T;
+}
+mutationEffect(m2) {	
+	hh = homozygous? 1 else mut.getValue("hh");	
+	return 1.0 + hh * mut.selectionCoeff; // 1 + hs
+}
+
+mutation(m6) {
+	mut.setValue("CustomSelectionCoeff", 0.05);  // s pasa a ser +0.05
+	return T;
+}
+mutationEffect(m6,p2) {
+ 	hh = homozygous? 1 else 0.5;	
+ return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p3) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p4) {
+   	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p5) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p6) {
+   	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p7) {
+   	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p8) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p9) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p10) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p11) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p12) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p13) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p14) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p15) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p16) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p17) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p18) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p19) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p20) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p21) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p22) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p23) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p24) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p25) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p26) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p27) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p28) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p29) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p30) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p31) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p32) {
+   	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+mutationEffect(m6,p33) {
+  	hh = homozygous? 1 else 0.5;	
+    return 1.0 + hh*mut.getValue("CustomSelectionCoeff");
+}
+
+// Log every 1000 generations
+1:50000 late() {
+    if((sim.cycle%1000)==0) 
+    	writeFile(filePath=log_file, contents=(sim.cycle + "\n"), append=F);
+}
+
+// run to generation
+50000 late() { 
+	//sample 51 genomes from the 32 populations:
+	s=c(2,2,2,2,2,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2,1,2);
+	sample=NULL;	
+	for(i in 0:31) {
+			sample=c(sample,sim.subpopulations[i].sampleIndividuals(s[i]));
+	}
+	//sample.genomes.output(file_output2);
+	//get genomes 	
+	g_1 = sample.genomes;
+	//Get the unique mutations in the sample, sorted by position
+	m = sortBy(unique(g_1.mutations),"position");
+	
+	//Exclude mhits
+	m_nmh=NULL;	
+	d=0;
+	for(mn in 0:(size(m)-2)) {
+			if(m[mn].position==m[mn+1].position) {
+				d=1;
+			} else {
+				if(d==0) {
+					m_nmh=c(m_nmh,m[mn]);	
+				}	else {
+					if(m[mn].position!=m[mn+1].position) {
+						d=0;
+				}
+			}	
+		}	
+	}
+	if(d==0) m_nmh=c(m_nmh,m[size(m)-1]);	
+
+	//print genotype
+	genotype=matrix(rep(0,51*size(m_nmh)*2),nrow=51,ncol=2*size(m_nmh),byrow=T); 
+	for(i in 0:50) {
+		s_hap1 = g_1[i*2+0].mutations.position;
+		s_hap2 = g_1[i*2+1].mutations.position;			
+		genotype[i,seq(0,2*(size(m_nmh)-1),2)]=sapply(c(0:(size(m_nmh)-1)),"sum(s_hap1==m_nmh.position[applyValue])+1;");
+		genotype[i,seq(1,2*(size(m_nmh)),2)]=sapply(c(0:(size(m_nmh)-1)),"sum(s_hap2==m_nmh.position[applyValue])+1;");
+		gs = paste(genotype[i,],sep=" ");
+		writeFile(filePath=file_output_ped,contents=(Chr+" "+"IND"+(i+1)+" 0 0 1 0 " + gs),append=T);
+	}	
+	//print number SNPs
+	writeFile(filePath=file_output_snps,contents=(size(m_nmh)+"	"),append=F);
+	//print chr_name  position  sel_effect  abs(sel_effect)  dominance  frequency
+	//writeFile(filePath=file_output_snps,contents=("Chr	Position	SelEff	abs(SelEff)	Dominance	Frequency"),append=F);
+	for (mm in m_nmh){
+		//dominance	
+		if(mm.mutationType.id == 2) hh=mm.getValue("hh");
+		else hh = mm.mutationType.dominanceCoeff;
+		if(mm.mutationType.id == 6) sc=mm.getValue("CustomSelectionCoeff");
+		else sc = mm.selectionCoeff;
+		//frequency
+		freq=sum(g_1[0:(2*sum(s)-1)].mutations.id==mm.id);
+		//print
+		writeFile(filePath=file_output_snps,contents=(Chr+"	"+mm.position+"	"+sc+"	"+abs(sc)+"	"+hh+"	"+freq),append=T);
+//		writeFile(filePath=file_output_snps,contents=(Chr+"	"+mm.position+"	"+sc+"	"+abs(sc)+"	"+hh+"	"+freq+"	" +"m"+mm.mutationType.id),append=T);
+	}
+	sim.simulationFinished();
+	cat("Simulation finished after running "+sim.cycle + " cycles.");
+}
