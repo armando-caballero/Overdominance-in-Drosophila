@@ -1,0 +1,19 @@
+
+./plink --file data --r2 --ld-window-r2 0 --ld-window 2
+awk '{print ($2" "$7)}' plink.ld > kk1
+sed '1d' kk1 > r2file
+
+./plink --file data --recode vcf
+
+./vcftools --vcf plink.vcf --site-pi --out pi
+awk '{print ($3)}' pi.sites.pi > kk2
+sed '1d' kk2 > pifile
+
+./vcftools --vcf plink.vcf --TajimaD 100000 --out TajimaD
+awk '{print ($3" "$4)}' TajimaD.Tajima.D > kk3
+sed '1d' kk3 > TajimaDfile
+
+awk '{print ($2)}' recombination-file-2L-100kb-2.txt > recombinationfile_2L
+awk '{print ($2)}' recombination-file-2R-100kb-2.txt > recombinationfile_2R
+awk '{print ($2)}' recombination-file-3L-100kb-2.txt > recombinationfile_3L
+awk '{print ($2)}' recombination-file-3R-100kb-2.txt > recombinationfile_3R

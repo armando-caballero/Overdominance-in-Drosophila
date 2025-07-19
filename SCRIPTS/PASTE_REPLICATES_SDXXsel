@@ -1,0 +1,116 @@
+
+######################################## SELPOS ################################################################
+
+paste   SD01k_2L/OUTPUT_INPUT_SD01_2L_selpos_GC2e-8.slim/tablepicorr.txt   SD01_2R/OUTPUT_INPUT_SD01_2R_selpos_GC2e-8.slim/tablepicorr.txt   SD01_3L/OUTPUT_INPUT_SD01_3L_selpos_GC2e-8.slim/tablepicorr.txt   SD01_3R/OUTPUT_INPUT_SD01_3R_selpos_GC2e-8.slim/tablepicorr.txt > TABLEPI_SD01.txt
+paste   SD01k_2L/OUTPUT_INPUT_SD01_2L_selpos_GC2e-8.slim/tablepicorr025.txt   SD01_2R/OUTPUT_INPUT_SD01_2R_selpos_GC2e-8.slim/tablepicorr025.txt   SD01_3L/OUTPUT_INPUT_SD01_3L_selpos_GC2e-8.slim/tablepicorr025.txt   SD01_3R/OUTPUT_INPUT_SD01_3R_selpos_GC2e-8.slim/tablepicorr025.txt > TABLEPI025_SD01.txt
+paste   SD01k_2L/OUTPUT_INPUT_SD01_2L_selpos_GC2e-8.slim/tabler2.txt   SD01_2R/OUTPUT_INPUT_SD01_2R_selpos_GC2e-8.slim/tabler2.txt   SD01_3L/OUTPUT_INPUT_SD01_3L_selpos_GC2e-8.slim/tabler2.txt   SD01_3R/OUTPUT_INPUT_SD01_3R_selpos_GC2e-8.slim/tabler2.txt > TABLEr2_SD01.txt
+paste   SD01k_2L/OUTPUT_INPUT_SD01_2L_selpos_GC2e-8.slim/tablenq.txt   SD01_2R/OUTPUT_INPUT_SD01_2R_selpos_GC2e-8.slim/tablenq.txt   SD01_3L/OUTPUT_INPUT_SD01_3L_selpos_GC2e-8.slim/tablenq.txt   SD01_3R/OUTPUT_INPUT_SD01_3R_selpos_GC2e-8.slim/tablenq.txt > TABLEnq_SD01.txt
+
+cd   SD01k_2L/OUTPUT_INPUT_SD01_2L_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -n -e 235p KK.txt > AAAA2Lave
+cp AAAA2Lave ../../
+cd ../..
+
+cd   SD01k_2R/OUTPUT_INPUT_SD01_2R_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -n -e 216p KK.txt > AAAA2Rave
+cp AAAA2Rave ../../
+cd ../..
+
+cd   SD01k_3L/OUTPUT_INPUT_SD01_3L_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -n -e 250p KK.txt > AAAA3Lave
+cp AAAA3Lave ../../
+cd ../..
+
+cd   SD01k_3R/OUTPUT_INPUT_SD01_3R_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -n -e 284p KK.txt > AAAA3Rave
+cp AAAA3Rave ../../
+cd ../..
+
+cat AAAA2Lave AAAA2Rave AAAA3Lave AAAA3Rave > TABLE_AVERAGE_SD01 
+
+########## RELATIONSHIP BETWEEN PI and C ##########
+
+for ((r=1; r<=10; r++))
+do
+cat   SD01k_2L/OUTPUT_INPUT_SD01_2L_selpos_GC2e-8.slim/table_C_PI$r.txt   SD01_2R/OUTPUT_INPUT_SD01_2R_selpos_GC2e-8.slim/table_C_PI$r.txt   SD01_3L/OUTPUT_INPUT_SD01_3L_selpos_GC2e-8.slim/table_C_PI$r.txt   SD01_3R/OUTPUT_INPUT_SD01_3R_selpos_GC2e-8.slim/table_C_PI$r.txt > TABLE_C_PI_SD01$r.txt
+sleep 2
+done
+
+for((r=1;r<=10;r++))
+do
+awk '{print $1}' TABLE_C_PI_SD01$r.txt > kk
+mv kk c_vec
+awk '{print $2}' TABLE_C_PI_SD01$r.txt > kk
+mv kk pi_vec
+sleep 2
+R CMD BATCH script.R
+sleep 5
+mv script.Rout script.Rout$r
+sed -n '32p;33p;34p' script.Rout$r >> TABLE_FIT_C_PI_SD01
+done
+
+cd   SD01k_2L/OUTPUT_INPUT_SD01_2L_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -i '1d;232d;233d;234d;235d' KK.txt
+sleep 2
+awk '{print ($5)}' KK.txt > temp2L 
+cp temp2L ../../
+cd ../..
+sleep 2
+
+cd   SD01k_2R/OUTPUT_INPUT_SD01_2R_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -i '1d;213d;214d;215d;216d' KK.txt
+sleep 2
+awk '{print ($5)}' KK.txt > temp2R 
+cp temp2R ../../
+cd ../..
+sleep 2
+
+cd   SD01k_3L/OUTPUT_INPUT_SD01_3L_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -i '1d;247d;248d;249d;250d' KK.txt
+sleep 2
+awk '{print ($5)}' KK.txt > temp3L 
+cp temp3L ../../
+cd ../..
+sleep 2
+
+cd   SD01k_3R/OUTPUT_INPUT_SD01_3R_selpos_GC2e-8.slim
+cp tableavg.txt KK.txt
+sleep 2
+sed -i '1d;281d;282d;283d;284d' KK.txt
+sleep 2
+awk '{print ($5)}' KK.txt > temp3R 
+cp temp3R ../../
+cd ../..
+sleep 2
+
+cat temp2L temp2R temp3L temp3R > TABLE_AVE_PICORRECTED_SD01
+
+
+######################################## TABLE_AVE_C_PI ################################################################
+
+awk '{print $1}' TABLE_C_PI_SD011.txt > kk
+paste kk TABLE_AVE_PICORRECTED_SD01 > TABLE_AVE_C_PI_SD01
+
+awk '{print $1}' TABLE_AVE_C_PI_SD01 > kk
+mv kk c_vec
+awk '{print $2}' TABLE_AVE_C_PI_SD01 > kk
+mv kk pi_vec
+sleep 2
+R CMD BATCH script.R
+sleep 5
+sed -n '32p;33p;34p' script.Rout > TABLE_FIT_AVE_C_PI_SD01
+
