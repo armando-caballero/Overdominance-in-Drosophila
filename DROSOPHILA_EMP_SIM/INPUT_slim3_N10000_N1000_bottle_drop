@@ -1,0 +1,163 @@
+// Keywords: 
+
+// set up a simple neutral simulation
+initialize()
+{
+	// set the overall mutation rate
+	initializeMutationRate(0.8e-9);
+	
+	// m1 mutation type: neutral
+	initializeMutationType("m1", 0.0, "f", 0.0);
+	
+	// g1 genomic element type: uses m1 for all mutations
+	initializeGenomicElementType("g1", m1, 1.0);
+	
+	// uniform chromosome of length 100 Mb
+	initializeGenomicElement(g1, 0, 99999999);
+	
+	// uniform recombination along the chromosome. 2 chromosomes of 50 Mb and 0.50 M
+	initializeRecombinationRate(c(1e-8,0.5,1e-8), c(49999999,50000000,99999999));
+}
+
+// create a population of N individuals
+1 { sim.addSubpop("p1", 10000); }
+
+9792 { 
+sim.addSubpopSplit("p2", 32, p1);
+sim.addSubpopSplit("p3", 32, p1);
+sim.addSubpopSplit("p4", 32, p1);
+sim.addSubpopSplit("p5", 32, p1);
+sim.addSubpopSplit("p6", 32, p1);
+sim.addSubpopSplit("p7", 32, p1);
+sim.addSubpopSplit("p8", 32, p1);
+sim.addSubpopSplit("p9", 32, p1);
+sim.addSubpopSplit("p10", 32, p1);
+sim.addSubpopSplit("p11", 32, p1);
+sim.addSubpopSplit("p12", 32, p1);
+sim.addSubpopSplit("p13", 32, p1);
+sim.addSubpopSplit("p14", 32, p1);
+sim.addSubpopSplit("p15", 32, p1);
+sim.addSubpopSplit("p16", 32, p1);
+sim.addSubpopSplit("p17", 32, p1);
+sim.addSubpopSplit("p18", 32, p1);
+sim.addSubpopSplit("p19", 32, p1);
+sim.addSubpopSplit("p20", 32, p1);
+sim.addSubpopSplit("p21", 32, p1);
+sim.addSubpopSplit("p22", 32, p1);
+sim.addSubpopSplit("p23", 32, p1);
+sim.addSubpopSplit("p24", 32, p1);
+sim.addSubpopSplit("p25", 32, p1);
+sim.addSubpopSplit("p26", 32, p1);
+sim.addSubpopSplit("p27", 32, p1);
+sim.addSubpopSplit("p28", 32, p1);
+sim.addSubpopSplit("p29", 32, p1);
+sim.addSubpopSplit("p30", 32, p1);
+sim.addSubpopSplit("p31", 32, p1);
+sim.addSubpopSplit("p32", 32, p1);
+sim.addSubpopSplit("p33", 32, p1);
+p1.setSubpopulationSize(0);}
+
+9792: 10000 late() 
+{ 
+p2.setMigrationRates(p3, 0.5);
+p3.setMigrationRates(p4, 0.5);
+p4.setMigrationRates(p5, 0.5);
+p5.setMigrationRates(p6, 0.5);
+p6.setMigrationRates(p7, 0.5);
+p7.setMigrationRates(p8, 0.5);
+p8.setMigrationRates(p9, 0.5);
+p9.setMigrationRates(p10, 0.5);
+p10.setMigrationRates(p11, 0.5);
+p11.setMigrationRates(p12, 0.5);
+p12.setMigrationRates(p13, 0.5);
+p13.setMigrationRates(p14, 0.5);
+p14.setMigrationRates(p15, 0.5);
+p15.setMigrationRates(p16, 0.5);
+p16.setMigrationRates(p17, 0.5);
+p17.setMigrationRates(p18, 0.5);
+p18.setMigrationRates(p19, 0.5);
+p19.setMigrationRates(p20, 0.5);
+p20.setMigrationRates(p21, 0.5);
+p21.setMigrationRates(p22, 0.5);
+p22.setMigrationRates(p23, 0.5);
+p23.setMigrationRates(p24, 0.5);
+p24.setMigrationRates(p25, 0.5);
+p25.setMigrationRates(p26, 0.5);
+p26.setMigrationRates(p27, 0.5);
+p27.setMigrationRates(p28, 0.5);
+p28.setMigrationRates(p29, 0.5);
+p29.setMigrationRates(p30, 0.5);
+p30.setMigrationRates(p31, 0.5);
+p31.setMigrationRates(p32, 0.5);
+p32.setMigrationRates(p33, 0.5);
+p33.setMigrationRates(p1, 0.5);
+
+
+10000 late() { 
+sample1 = p2.sampleIndividuals(2);  
+sample2 = p3.sampleIndividuals(2);
+sample3 = p4.sampleIndividuals(2);
+sample4 = p5.sampleIndividuals(2);
+sample5 = p6.sampleIndividuals(2);
+sample6 = p7.sampleIndividuals(2);
+sample7 = p8.sampleIndividuals(2);
+sample8 = p9.sampleIndividuals(1);
+sample9 = p10.sampleIndividuals(2);
+sample10 = p11.sampleIndividuals(1);
+sample11 = p12.sampleIndividuals(2);
+sample12 = p13.sampleIndividuals(1);
+sample13 = p14.sampleIndividuals(2);
+sample14 = p15.sampleIndividuals(1);
+sample15 = p16.sampleIndividuals(2);
+sample16 = p17.sampleIndividuals(1);
+sample17 = p18.sampleIndividuals(2);
+sample18 = p19.sampleIndividuals(1);
+sample19 = p20.sampleIndividuals(2);
+sample20 = p21.sampleIndividuals(1);
+sample21 = p22.sampleIndividuals(2);
+sample22 = p23.sampleIndividuals(1);
+sample23 = p24.sampleIndividuals(2);
+sample24 = p25.sampleIndividuals(1);
+sample25 = p26.sampleIndividuals(2);
+sample26 = p27.sampleIndividuals(1);
+sample27 = p28.sampleIndividuals(2);
+sample28 = p29.sampleIndividuals(1);
+sample29 = p30.sampleIndividuals(2);
+sample30 = p31.sampleIndividuals(1);
+sample31 = p32.sampleIndividuals(2);
+sample32 = p33.sampleIndividuals(1);
+
+ c(sample1.genomes, sample2.genomes, sample3.genomes, sample4.genomes, sample5.genomes, sample6.genomes, sample7.genomes, sample8.genomes, sample9.genomes, sample10.genomes, sample11.genomes, sample12.genomes, sample13.genomes, sample14.genomes, sample15.genomes, sample16.genomes, sample17.genomes, sample18.genomes, sample19.genomes, sample20.genomes, sample21.genomes, sample22.genomes, sample23.genomes, sample24.genomes, sample25.genomes, sample26.genomes, sample27.genomes, sample28.genomes, sample29.genomes, sample30.genomes, sample31.genomes, sample32.genomes).output();
+ cat(paste(sample1.subpopulation.id, "\n"));
+ cat(paste(sample2.subpopulation.id, "\n"));
+ cat(paste(sample3.subpopulation.id, "\n"));
+ cat(paste(sample4.subpopulation.id, "\n"));
+ cat(paste(sample5.subpopulation.id, "\n"));
+ cat(paste(sample6.subpopulation.id, "\n"));
+ cat(paste(sample7.subpopulation.id, "\n"));
+ cat(paste(sample8.subpopulation.id, "\n"));
+ cat(paste(sample9.subpopulation.id, "\n"));
+ cat(paste(sample10.subpopulation.id, "\n"));
+ cat(paste(sample11.subpopulation.id, "\n"));
+ cat(paste(sample12.subpopulation.id, "\n"));
+ cat(paste(sample13.subpopulation.id, "\n"));
+ cat(paste(sample14.subpopulation.id, "\n"));
+ cat(paste(sample15.subpopulation.id, "\n"));
+ cat(paste(sample16.subpopulation.id, "\n"));
+ cat(paste(sample17.subpopulation.id, "\n"));
+ cat(paste(sample18.subpopulation.id, "\n"));
+ cat(paste(sample19.subpopulation.id, "\n"));
+ cat(paste(sample20.subpopulation.id, "\n"));
+ cat(paste(sample21.subpopulation.id, "\n"));
+ cat(paste(sample22.subpopulation.id, "\n"));
+ cat(paste(sample23.subpopulation.id, "\n"));
+ cat(paste(sample24.subpopulation.id, "\n"));
+ cat(paste(sample25.subpopulation.id, "\n"));
+ cat(paste(sample26.subpopulation.id, "\n"));
+ cat(paste(sample27.subpopulation.id, "\n"));
+ cat(paste(sample28.subpopulation.id, "\n"));
+ cat(paste(sample29.subpopulation.id, "\n"));
+ cat(paste(sample30.subpopulation.id, "\n"));
+ cat(paste(sample31.subpopulation.id, "\n"));
+ cat(paste(sample32.subpopulation.id, "\n"));
+}
