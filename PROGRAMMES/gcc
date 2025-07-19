@@ -1,0 +1,4 @@
+
+#time gcc -o SIMOVERDOM_ines17 -w -O SIMOVERDOM_ines17.c genlib.c -lm
+#time gcc -o AVERAGE -w -O AVERAGE14.c genlib.c -lm
+time gcc -o BOOTSTRAP_PI -w -O BOOTSTRAP_PI.c genlib.c -lm
