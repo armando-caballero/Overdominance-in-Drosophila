@@ -1,0 +1,25 @@
+#example blueprint file
+#input setting
+popid: Drosophila_Arm_Syn # id of the population (no white space)
+nseq: 102 # number of sequences
+L: 3316854 # total number of observed nucleic sites, including polymorphic and monomorphic
+whether_folded: true # whethr the SFS is folded (true or false)
+SFS: 10446	7909	4383	4274	3557	3205	3039	2876	2751	2316	2422	2398	2097	2110	2014	2034	2038	1967	2032	1889	1926	1870	1924	1779	1666	1802	1679	1647	1618	1633	1659	1690	1681	1572	1650	1611	1538	1514	1450	1450	1537	1508	1530	1468	1546	1461	1522	1436	1450	1425	798
+smallest_size_of_SFS_bin_used_for_estimation: 1 # default is 1; to ignore singletons, uncomment this line and change this number to 2
+largest_size_of_SFS_bin_used_for_estimation: 51 # default is n-1; to ignore singletons, uncomment this line and change this number to nseq-2
+pct_training: 0.67 # percentage of sites for training
+nrand: 5 20 32 46 # number of random break points for each try (separated by white space)
+project_dir: Drosophila_Arm_Syn # project directory
+stairway_plot_dir: stairway_plot_es # directory to the stairway plot files
+ninput: 200 # number of input files to be created for each estimation
+#random_seed: 1442
+#output setting
+mu: 3e-9 # assumed mutation rate per site per generation
+year_per_generation: 0.05 # assumed generation time (in years)
+#plot setting
+plot_title: Drosophila_Arm # title of the plot
+xrange: 0.1,4 # Time (1k year) range; format: xmin,xmax; "0,0" for default
+yrange: 0,0 # Ne (1k individual) range; format: xmin,xmax; "0,0" for default
+xspacing: 2 # X axis spacing
+yspacing: 2 # Y axis spacing
+fontsize: 12 # Font size
